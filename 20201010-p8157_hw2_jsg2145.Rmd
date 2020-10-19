@@ -1,6 +1,6 @@
 ---
 title: "20201010-p8157_hw2_jsg2145"
-author: "Jacquelyn Fusco"
+author: "Jared Garfinkel"
 date: "10/10/2020"
 output: html_document
 ---
@@ -142,7 +142,6 @@ gee_model3 = geepack::geeglm(y ~ skin + age + year + tr + exposure, data = df, i
 summary(gee_model3)
 ```
 
-<<<<<<< HEAD
 ```{r}
 gee_model4 = geepack::geeglm(y ~ skin + age + year + tr + exposure, data = df, id = id, family = poisson(link = "log"), corstr = "AR1")
 
@@ -180,5 +179,3 @@ The beta estimates of the parameters appear to be similar across correlation str
 However, the correlation parameters appear to decrease as the lag increases in the AR1 correlation structure.
 
 One way to choose the correlation structure to use may be the AIC or BIC.
-=======
->>>>>>> f1724e4f6ec4f5b19a41798a15e9e9acbf27d86a
