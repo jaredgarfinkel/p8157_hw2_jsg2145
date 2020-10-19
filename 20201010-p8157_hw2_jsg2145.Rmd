@@ -1,0 +1,181 @@
+---
+title: "20201010-p8157_hw2_jsg2145"
+author: "Jacquelyn Fusco"
+date: "10/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(viridis)
+library(geepack)
+library(doBy)
+knitr::opts_chunk$set(
+	echo = TRUE,
+	warning = FALSE,
+	message = FALSE,
+	fig.width = 8, 
+  fig.height = 6,
+  out.width = "90%"
+)
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis",
+  scipen = 999
+)
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+```
+
+```{r}
+# data = read.delim(file = "./data/toenail.txt", sep = "", col.names = c("id", "y", "treatment", "month", "visit"), header = TRUE)
+
+data = read_delim(file = "./data/toenail.txt", delim = " ", col_names = c("id", "y", "treatment", "month", "visit"), skip = 1)
+
+data
+```
+
+```{r}
+data %>% 
+  ggplot() +
+  geom_path(aes(x = month, y = y, group = id, color = treatment)) +
+  theme(legend.position = "none")
+```
+
+
+```{r}
+gee1 = geepack::geeglm(y ~ month * treatment, data = data, id = id, family = binomial(link = "logit"), corstr = "exchangeable")
+summary(gee1)
+```
+
+```{r}
+L = matrix(0, ncol = 4, nrow = 1)
+
+L[1, c(4)] = c(1)
+
+L
+```
+
+```{r}
+esticon(gee1, L=L, joint.test = TRUE)
+```
+
+```{r}
+gee2 = geepack::geeglm(y ~ month + treatment, data = data, id = id, family = binomial(link = "logit"), corstr = "exchangeable")
+summary(gee2)
+```
+
+# Question 2
+
+## Read in data
+
+Format the data for analysis.
+
+```{r}
+df = read_delim(file = "./data/skin.txt", delim = " ", col_names = c("id", "center", "age", "skin", "gender", "exposure", "y", "tr", "year"), skip = 1) %>% 
+  mutate(tr = as_factor(tr),
+         year = as.numeric(year),
+         y = as.numeric(y),
+         age = as.numeric(age),
+         gender = as_factor(gender),
+         skin = as_factor(skin),
+         exposure = as.numeric(exposure),
+         current_age = age + year - 1)
+
+df
+```
+
+## Part 1
+
+### Set up the model
+
+Using only year and treatment group, set up a GEE model for rate of skin cancers.
+
+```{r}
+gee_model1 = geepack::geeglm(y ~ year + tr , data = df, id = id, family = poisson(link = "log"), corstr = "exchangeable")
+
+summary(gee_model1)
+```
+
+## Part 2
+
+### Interpret the coefficients
+
+None of the covariates in the model appear to be significant. 
+
+However, the interpretation would be that the log of the rate ratio of new skin cancer growths increases by 0.0173 each year holding treatment group constant.
+
+Further, the log of the rate ratio of new skin cancer growths in treatment 1 is 0.1478 times greater compared to those in the control group at each time point.
+
+Based on these results, it appears that beta-carotene does not improve health outcomes, since those in the treatment group had a higher log of the rate ratio of new skin cancer growths as mentioned above.
+
+## Part 3
+
+```{r, eval = FALSE}
+gee_model2 = geepack::geeglm(y ~ skin + age + year + tr + exposure, data = df, id = id, family = poisson(link = "log"), corstr = "exchangeable")
+
+summary(gee_model2)
+```
+
+## Part 4
+
+Adjusting for skin type, age, and exposure to previous skin cancers, the coefficients have different interpretations.
+
+This data show that having skin that is not burned is associated with a lower log of the rate ratio for new cancer growths by 0.162 times compared to those with burned skin holding other covariates constant.
+
+A one unit increase in the patient's age at randomization is associated with a log of the rate ratio of new skin cancer of 0.01496 holding other covariates constant.
+
+There is an increase in the log of the rate ratio associated with each annual check of 0.01759 holding other covariates constant.
+
+Those in the treatment group had a log of the rate ratio of 0.124 times those not in the treatment group holding other covariates constant.
+
+Each one unit increase in exposure is associated with a 0.139 increase in the log of the rate ratio of new cancer holding other covariates constant.
+
+Since the treatment effect is not significant in the model, there is no evidence to suggest that the treatment of beta carotene improves skin cancer outcomes.
+
+## Part 5
+
+```{r}
+gee_model3 = geepack::geeglm(y ~ skin + age + year + tr + exposure, data = df, id = id, family = poisson(link = "log"), corstr = "unstructured")
+
+summary(gee_model3)
+```
+
+```{r}
+gee_model4 = geepack::geeglm(y ~ skin + age + year + tr + exposure, data = df, id = id, family = poisson(link = "log"), corstr = "AR1")
+
+summary(gee_model4)
+```
+
+```{r}
+# str(gee_model3)
+a = gee_model4$geese$alpha
+a2 = gee_model3$geese$alpha
+
+
+M = matrix(data = 0, nrow = 5, ncol = 5, byrow = TRUE)
+M[1,] = c(1, a, a^2, a^3, a^4)
+M[2,] = c(a, 1, a, a^2, a^3)
+M[3,] = c(a^2, a, 1, a, a^2)
+M[4,] = c(a^3, a^2, a, 1, a)
+M[5,] = c(a^4, a^3, a^2, a, 1)
+M
+
+N = matrix(data = c(1, a2[1], a2[2], a2[3], a2[4], 
+                    a2[1], 1, a2[5], a2[6], a2[7], 
+                    a2[2], a2[5], 1, a2[8], a2[9], 
+                    a2[3], a2[6], a2[8], 1, a2[10],
+                    a2[4], a2[7], a2[9], a2[10], 1), 
+           nrow = 5, ncol = 5, byrow = TRUE)
+N
+```
+
+
+## Part 6
+
+The beta estimates of the parameters appear to be similar across correlation structures with slight differences in the p-values. 
+
+However, the correlation parameters appear to decrease as the lag increases in the AR1 correlation structure.
+
+One way to choose the correlation structure to use may be the AIC or BIC.
