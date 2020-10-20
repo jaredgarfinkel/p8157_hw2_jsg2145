@@ -2,7 +2,7 @@
 title: "20201010-p8157_hw2_jsg2145"
 author: "Jared Garfinkel"
 date: "10/10/2020"
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -178,4 +178,4 @@ The beta estimates of the parameters appear to be similar across correlation str
 
 However, the correlation parameters appear to decrease as the lag increases in the AR1 correlation structure.
 
-One way to choose the correlation structure to use may be the AIC or BIC.
+This indicates that there may be overdispersion.
